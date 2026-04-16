@@ -41,7 +41,9 @@ static double clampd(double v, double lo, double hi) {
 }
 
 int image_pixel_width_for(int paper_char_width) {
-    return paper_char_width <= 32 ? PRINTER_PIX_WIDTH_58MM : PRINTER_PIX_WIDTH_80MM;
+    if (paper_char_width <= 32) return PRINTER_PIX_WIDTH_58MM;
+    if (paper_char_width <= 42) return PRINTER_PIX_WIDTH_EPSON;
+    return PRINTER_PIX_WIDTH_80MM;
 }
 
 /* ── Resize with white-background alpha flatten (bilinear) ────────── */
