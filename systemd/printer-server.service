@@ -1,0 +1,44 @@
+[Unit]
+Description=Raspberry Pi Thermal Printer Server
+Documentation=https://github.com/your-org/raspberry-pi-printer-server
+After=network-online.target cups.service
+Wants=network-online.target cups.service
+Requires=cups.service
+
+[Service]
+Type=simple
+
+# Run as root so we can:
+#   - bind to privileged ports < 1024 if reconfigured (currently 5123/5124)
+#   - run lpadmin to add/remove CUPS queues
+#   - read /etc/printer-server/certs without group setup.
+#
+# If you prefer an unprivileged user, create one and add it to the "lpadmin"
+# and "lp" groups, then change User= below. 5123/5124 are already non-privileged.
+User=root
+Group=root
+
+WorkingDirectory=/etc/printer-server
+ExecStart=/usr/local/bin/printer-server -c /etc/printer-server/config.json
+
+# Restart on failure, with a small delay to avoid tight crash loops.
+Restart=always
+RestartSec=2
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+# Logging goes to journald.
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=printer-server
+
+# Sandbox hardening — relax if you hit issues, but these are all compatible
+# with CUPS printing.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+ReadWritePaths=/etc/printer-server /var/spool/cups /var/log
+
+[Install]
+WantedBy=multi-user.target

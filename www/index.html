@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Print Server</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ── Reset + Vars ───────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080c12; --bg2:#0e1520; --card:#121a26; --card-hover:#162030;
+  --border:#1a2738; --border-light:#243448;
+  --text:#c5cdd8; --text-dim:#6a7a8a; --text-bright:#eaf0f6;
+  --green:#00e68a; --green-dim:#00e68a30; --amber:#f0a030; --amber-dim:#f0a03030;
+  --red:#f04050; --red-dim:#f0405030; --blue:#4da6ff; --blue-dim:#4da6ff20;
+  --accent:#00e68a;
+  --mono:'JetBrains Mono',monospace; --sans:'IBM Plex Sans',system-ui,sans-serif;
+  --radius:8px; --radius-sm:5px;
+}
+html{font-size:14px; scroll-behavior:smooth}
+body{
+  font-family:var(--sans); color:var(--text); background:var(--bg);
+  min-height:100vh; line-height:1.55;
+  background-image:
+    radial-gradient(circle at 1px 1px, #ffffff06 1px, transparent 0);
+  background-size:28px 28px;
+}
+a{color:var(--blue); text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── Layout ─────────────────────────────────────────────────── */
+.shell{max-width:1200px; margin:0 auto; padding:1rem}
+
+/* ── Top Bar ────────────────────────────────────────────────── */
+.topbar{
+  display:flex; align-items:center; gap:1rem; flex-wrap:wrap;
+  padding:1rem 1.25rem; margin-bottom:1.5rem;
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+}
+.topbar-brand{display:flex; align-items:center; gap:.75rem}
+.topbar-logo{
+  width:38px; height:38px; border-radius:8px;
+  background:linear-gradient(135deg,#00e68a,#00b0ff);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-weight:700; font-size:18px; color:#080c12;
+}
+.topbar h1{font-family:var(--mono); font-size:1.1rem; font-weight:700; color:var(--text-bright); letter-spacing:-.3px}
+.topbar-meta{display:flex; gap:.6rem; flex-wrap:wrap; margin-left:auto; align-items:center}
+.chip{
+  font-family:var(--mono); font-size:.72rem; padding:.25rem .6rem;
+  background:var(--bg2); border:1px solid var(--border); border-radius:20px;
+  color:var(--text-dim); white-space:nowrap; display:flex; align-items:center; gap:.35rem;
+}
+.chip .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot-green{background:var(--green);box-shadow:0 0 6px var(--green)}
+.dot-amber{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+.dot-red{background:var(--red);box-shadow:0 0 6px var(--red)}
+
+/* ── Section ────────────────────────────────────────────────── */
+.section{margin-bottom:1.5rem}
+.section-head{
+  display:flex; align-items:center; justify-content:space-between; gap:1rem;
+  margin-bottom:.75rem; flex-wrap:wrap;
+}
+.section-title{
+  font-family:var(--mono); font-size:.85rem; font-weight:600;
+  color:var(--text-dim); text-transform:uppercase; letter-spacing:1.5px;
+}
+.section-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+
+/* ── Cards ──────────────────────────────────────────────────── */
+.card{
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:1rem 1.25rem; transition:border-color .2s;
+}
+.card:hover{border-color:var(--border-light)}
+
+/* ── Printer List ───────────────────────────────────────────── */
+.printer-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:.75rem}
+.printer-card{
+  display:flex; flex-direction:column; gap:.7rem; cursor:default;
+  position:relative; overflow:hidden;
+}
+.printer-card::before{
+  content:''; position:absolute; top:0; left:0; width:3px; height:100%;
+  border-radius:3px 0 0 3px;
+}
+.printer-card.online::before{background:var(--green)}
+.printer-card.offline::before{background:var(--red)}
+.printer-card.unknown::before{background:var(--text-dim)}
+.printer-top{display:flex; align-items:center; gap:.7rem}
+.printer-icon{
+  width:36px; height:36px; border-radius:var(--radius-sm);
+  background:var(--bg); border:1px solid var(--border);
+  display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;
+}
+.printer-name{font-family:var(--mono); font-size:.9rem; font-weight:600; color:var(--text-bright); word-break:break-all}
+.printer-status{
+  font-family:var(--mono); font-size:.7rem; padding:.15rem .5rem;
+  border-radius:20px; display:inline-flex; align-items:center; gap:.3rem; margin-left:auto;
+  white-space:nowrap;
+}
+.status-ready{background:var(--green-dim); color:var(--green)}
+.status-printing{background:var(--blue-dim); color:var(--blue)}
+.status-error{background:var(--red-dim); color:var(--red)}
+.status-offline{background:var(--red-dim); color:var(--red)}
+.status-unknown{background:#ffffff10; color:var(--text-dim)}
+.printer-info{display:flex;gap:.6rem;flex-wrap:wrap}
+.printer-info span{font-size:.75rem;color:var(--text-dim)}
+.printer-actions{display:flex;gap:.35rem;flex-wrap:wrap}
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.btn{
+  font-family:var(--mono); font-size:.72rem; font-weight:500;
+  padding:.4rem .7rem; border:1px solid var(--border); border-radius:var(--radius-sm);
+  background:var(--bg2); color:var(--text); cursor:pointer;
+  transition:all .15s; white-space:nowrap; display:inline-flex; align-items:center; gap:.3rem;
+}
+.btn:hover{background:var(--card-hover); border-color:var(--border-light); color:var(--text-bright)}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-accent{border-color:var(--green);color:var(--green)}
+.btn-accent:hover{background:var(--green-dim);border-color:var(--green)}
+.btn-danger{border-color:var(--red);color:var(--red)}
+.btn-danger:hover{background:var(--red-dim);border-color:var(--red)}
+.btn-primary{background:var(--accent);color:#080c12;border-color:var(--accent);font-weight:600}
+.btn-primary:hover{background:#00ffaa;border-color:#00ffaa}
+
+/* ── Forms ──────────────────────────────────────────────────── */
+.form-row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:flex-end}
+.form-group{display:flex;flex-direction:column;gap:.3rem;flex:1;min-width:160px}
+.form-group label{font-family:var(--mono);font-size:.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px}
+.input{
+  font-family:var(--mono); font-size:.82rem; padding:.5rem .7rem;
+  background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm);
+  color:var(--text-bright); outline:none; transition:border-color .2s; width:100%;
+}
+.input:focus{border-color:var(--accent)}
+.input::placeholder{color:var(--text-dim)}
+select.input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236a7a8a'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .7rem center;padding-right:2rem}
+textarea.input{resize:vertical;min-height:80px;font-family:var(--mono);font-size:.78rem;line-height:1.5}
+
+/* ── Tabs ───────────────────────────────────────────────────── */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:1rem}
+.tab{
+  font-family:var(--mono); font-size:.75rem; padding:.55rem 1rem;
+  color:var(--text-dim); cursor:pointer; border-bottom:2px solid transparent;
+  transition:all .15s; user-select:none;
+}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ── Toast / Log ────────────────────────────────────────────── */
+.log{
+  max-height:220px; overflow-y:auto; padding:.5rem;
+  background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm);
+  font-family:var(--mono); font-size:.72rem; line-height:1.8;
+}
+.log:empty::after{content:'No activity yet.';color:var(--text-dim)}
+.log-entry{display:flex;gap:.5rem;padding:.1rem 0;border-bottom:1px solid #ffffff06}
+.log-time{color:var(--text-dim);flex-shrink:0}
+.log-ok{color:var(--green)}
+.log-err{color:var(--red)}
+.log-info{color:var(--blue)}
+
+/* ── Empty state ────────────────────────────────────────────── */
+.empty{
+  text-align:center; padding:2.5rem 1rem; color:var(--text-dim);
+  font-family:var(--mono); font-size:.85rem;
+}
+.empty-icon{font-size:2rem;margin-bottom:.5rem;opacity:.4}
+
+/* ── Spinner ────────────────────────────────────────────────── */
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay{display:flex;align-items:center;justify-content:center;padding:2rem;gap:.5rem;color:var(--text-dim);font-family:var(--mono);font-size:.8rem}
+
+/* ── Modal ──────────────────────────────────────────────────── */
+.modal-bg{
+  display:none; position:fixed; inset:0; background:#000a; z-index:100;
+  align-items:center; justify-content:center; padding:1rem;
+}
+.modal-bg.open{display:flex}
+.modal{
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:1.5rem; width:100%; max-width:500px; max-height:90vh; overflow-y:auto;
+}
+.modal h2{font-family:var(--mono);font-size:.95rem;color:var(--text-bright);margin-bottom:1rem}
+.modal-footer{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1.25rem}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media(max-width:600px){
+  .topbar{flex-direction:column;align-items:flex-start}
+  .topbar-meta{margin-left:0}
+  .printer-grid{grid-template-columns:1fr}
+  .form-row{flex-direction:column}
+  .form-group{min-width:100%}
+}
+
+/* ── Animations ─────────────────────────────────────────────── */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.fade-in{animation:fadeIn .35s ease-out both}
+.printer-card{animation:fadeIn .3s ease-out both}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.pulse{animation:pulse 2s ease-in-out infinite}
+</style>
+</head>
+
+<body>
+<div class="shell">
+
+<!-- ══ TOP BAR ════════════════════════════════════════════════ -->
+<div class="topbar fade-in">
+  <div class="topbar-brand">
+    <div class="topbar-logo">Pi</div>
+    <h1>Print Server</h1>
+  </div>
+  <div class="topbar-meta" id="server-info">
+    <div class="chip"><span class="dot dot-green pulse"></span> loading&hellip;</div>
+  </div>
+</div>
+
+<!-- ══ PRINTERS ══════════════════════════════════════════════ -->
+<div class="section fade-in" style="animation-delay:.05s">
+  <div class="section-head">
+    <span class="section-title">Printers</span>
+    <div class="section-actions">
+      <button class="btn btn-accent" onclick="refreshPrinters()">&#8635; Refresh</button>
+      <button class="btn" onclick="openModal('modal-add-net')">+ Network</button>
+      <button class="btn" onclick="openModal('modal-add-usb')">+ USB</button>
+      <button class="btn" onclick="autoDiscover()">Auto-Discover</button>
+    </div>
+  </div>
+  <div class="printer-grid" id="printer-list">
+    <div class="loading-overlay"><span class="spinner"></span> Loading printers&hellip;</div>
+  </div>
+</div>
+
+<!-- ══ PRINT OPERATIONS ═════════════════════════════════════ -->
+<div class="section fade-in" style="animation-delay:.1s">
+  <div class="section-head">
+    <span class="section-title">Print</span>
+  </div>
+  <div class="card">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab(this,'print')">Test Page</div>
+      <div class="tab" onclick="switchTab(this,'print')">Text</div>
+      <div class="tab" onclick="switchTab(this,'print')">Image</div>
+      <div class="tab" onclick="switchTab(this,'print')">Raw</div>
+      <div class="tab" onclick="switchTab(this,'print')">Controls</div>
+    </div>
+
+    <!-- Test Page -->
+    <div class="tab-panel active" data-group="print">
+      <div class="form-row">
+        <div class="form-group" style="flex:2"><label>Printer</label><select class="input printer-select" id="test-printer"></select></div>
+        <div class="form-group" style="flex:1"><label>Paper Width</label>
+          <select class="input" id="test-width"><option value="48">80mm (48 chars)</option><option value="32">58mm (32 chars)</option></select>
+        </div>
+        <button class="btn btn-primary" style="height:36px;align-self:flex-end" onclick="printTest()">Print Test Page</button>
+      </div>
+    </div>
+
+    <!-- Text -->
+    <div class="tab-panel" data-group="print">
+      <div class="form-row" style="margin-bottom:.5rem">
+        <div class="form-group" style="flex:2"><label>Printer</label><select class="input printer-select" id="text-printer"></select></div>
+        <div class="form-group" style="flex:1"><label>Paper Width</label>
+          <select class="input" id="text-width"><option value="48">80mm</option><option value="32">58mm</option></select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:.5rem"><label>Content (use \n for newlines)</label>
+        <textarea class="input" id="text-content" placeholder="Hello from Raspberry Pi!\n\nLine two here."></textarea>
+      </div>
+      <div class="form-row">
+        <label style="font-size:.75rem;display:flex;align-items:center;gap:.3rem;color:var(--text-dim)">
+          <input type="checkbox" id="text-cut" checked> Cut after print
+        </label>
+        <button class="btn btn-primary" style="margin-left:auto" onclick="printText()">Print Text</button>
+      </div>
+    </div>
+
+    <!-- Image -->
+    <div class="tab-panel" data-group="print">
+      <div class="form-row" style="margin-bottom:.5rem">
+        <div class="form-group" style="flex:2"><label>Printer</label><select class="input printer-select" id="img-printer"></select></div>
+        <div class="form-group" style="flex:1"><label>Paper Width</label>
+          <select class="input" id="img-width"><option value="48">80mm</option><option value="32">58mm</option></select>
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:.5rem">
+        <div class="form-group"><label>Image File (PNG, JPG, BMP)</label><input type="file" class="input" id="img-file" accept="image/*"></div>
+      </div>
+      <div class="form-row" style="margin-bottom:.5rem">
+        <div class="form-group"><label>Dithering</label>
+          <select class="input" id="img-dither"><option value="floyd-steinberg">Floyd-Steinberg</option><option value="atkinson">Atkinson</option><option value="threshold">Threshold</option></select>
+        </div>
+        <div class="form-group"><label>Brightness</label><input type="number" class="input" id="img-brightness" value="130" min="50" max="200"></div>
+        <div class="form-group"><label>Gamma</label><input type="number" class="input" id="img-gamma" value="1.8" min="0.5" max="3.0" step="0.1"></div>
+      </div>
+      <div class="form-row">
+        <label style="font-size:.75rem;display:flex;align-items:center;gap:.3rem;color:var(--text-dim)">
+          <input type="checkbox" id="img-cut" checked> Cut after print
+        </label>
+        <button class="btn btn-primary" style="margin-left:auto" onclick="printImage()">Print Image</button>
+      </div>
+    </div>
+
+    <!-- Raw -->
+    <div class="tab-panel" data-group="print">
+      <div class="form-row" style="margin-bottom:.5rem">
+        <div class="form-group" style="flex:2"><label>Printer</label><select class="input printer-select" id="raw-printer"></select></div>
+      </div>
+      <div class="form-group" style="margin-bottom:.5rem"><label>Base64-encoded ESC/POS data</label>
+        <textarea class="input" id="raw-data" placeholder="G0AbbQAbYQE="></textarea>
+      </div>
+      <div class="form-row">
+        <button class="btn btn-primary" style="margin-left:auto" onclick="printRaw()">Send Raw Data</button>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="tab-panel" data-group="print">
+      <div class="form-row" style="margin-bottom:.75rem">
+        <div class="form-group" style="flex:2"><label>Printer</label><select class="input printer-select" id="ctrl-printer"></select></div>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn" onclick="doBeep()">&#128276; Beep</button>
+        <button class="btn" onclick="doCut('full')">&#9986; Full Cut</button>
+        <button class="btn" onclick="doCut('partial')">&#9986; Partial Cut</button>
+        <button class="btn btn-accent" onclick="doOpenDrawer()">&#128274; Open Drawer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ACTIVITY LOG ═════════════════════════════════════════ -->
+<div class="section fade-in" style="animation-delay:.15s">
+  <div class="section-head">
+    <span class="section-title">Activity</span>
+    <button class="btn" onclick="clearLog()">Clear</button>
+  </div>
+  <div class="log" id="log"></div>
+</div>
+
+</div><!-- .shell -->
+
+<!-- ══ MODAL: Add Network Printer ═══════════════════════════ -->
+<div class="modal-bg" id="modal-add-net" onclick="if(event.target===this)closeModals()">
+<div class="modal">
+  <h2>Add Network Printer</h2>
+  <div class="form-group" style="margin-bottom:.6rem"><label>IP Address</label><input class="input" id="net-ip" placeholder="192.168.1.100"></div>
+  <div class="form-group" style="margin-bottom:.6rem"><label>Printer Name (optional)</label><input class="input" id="net-name" placeholder="Thermal-Kitchen"></div>
+  <div class="form-group" style="margin-bottom:.6rem"><label>Driver (optional)</label><input class="input" id="net-driver" placeholder="raw"></div>
+  <div class="modal-footer">
+    <button class="btn" onclick="closeModals()">Cancel</button>
+    <button class="btn btn-primary" onclick="addNetworkPrinter()">Add Printer</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ MODAL: Add USB Printer ═══════════════════════════════ -->
+<div class="modal-bg" id="modal-add-usb" onclick="if(event.target===this)closeModals()">
+<div class="modal">
+  <h2>Add USB Printer</h2>
+  <div class="form-group" style="margin-bottom:.6rem"><label>USB Device</label>
+    <select class="input" id="usb-device"><option value="">Loading...</option></select>
+  </div>
+  <div class="form-group" style="margin-bottom:.6rem"><label>Printer Name (optional)</label><input class="input" id="usb-name" placeholder="Thermal-Cashier"></div>
+  <div class="form-group" style="margin-bottom:.6rem"><label>Driver (optional)</label><input class="input" id="usb-driver" placeholder="raw"></div>
+  <div class="modal-footer">
+    <button class="btn" onclick="closeModals()">Cancel</button>
+    <button class="btn btn-primary" onclick="addUsbPrinter()">Add Printer</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ MODAL: Auto-Discover ═════════════════════════════════ -->
+<div class="modal-bg" id="modal-discover" onclick="if(event.target===this)closeModals()">
+<div class="modal">
+  <h2>Auto-Discover Printers</h2>
+  <p style="font-size:.8rem;color:var(--text-dim);margin-bottom:.8rem">Scans for USB printers and (optionally) the network for devices on port 9100.</p>
+  <div class="form-group" style="margin-bottom:.6rem"><label>Network Subnet (optional)</label><input class="input" id="discover-subnet" placeholder="192.168.1"></div>
+  <div id="discover-results" style="margin-bottom:.6rem"></div>
+  <div class="modal-footer">
+    <button class="btn" onclick="closeModals()">Close</button>
+    <button class="btn btn-primary" id="discover-btn" onclick="runDiscover()">Scan Now</button>
+  </div>
+</div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   Raspberry Pi Print Server — Dashboard
+   All API calls go to the same origin.
+   ══════════════════════════════════════════════════════════════ */
+const API = '';  /* same origin */
+
+/* ── Helpers ─────────────────────────────────────────────────── */
+async function api(path, opts = {}) {
+  const res = await fetch(API + path, {
+    ...opts,
+    headers: opts.body instanceof FormData ? {} : { 'Content-Type': 'application/json', ...(opts.headers || {}) }
+  });
+  const ct = res.headers.get('content-type') || '';
+  return ct.includes('json') ? res.json() : res.text();
+}
+
+function $(id) { return document.getElementById(id); }
+function qs(sel, root = document) { return root.querySelector(sel); }
+function qsa(sel, root = document) { return [...root.querySelectorAll(sel)]; }
+
+function logEntry(msg, cls = 'log-info') {
+  const el = $('log');
+  const t = new Date().toLocaleTimeString('en-GB');
+  el.innerHTML = `<div class="log-entry"><span class="log-time">${t}</span><span class="${cls}">${esc(msg)}</span></div>` + el.innerHTML;
+  /* Keep max 100 entries */
+  while (el.children.length > 100) el.lastChild.remove();
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function openModal(id) {
+  $(id).classList.add('open');
+  if (id === 'modal-add-usb') loadUsbPorts();
+}
+function closeModals() { qsa('.modal-bg').forEach(m => m.classList.remove('open')); }
+
+function switchTab(el, group) {
+  const tabs = el.parentElement;
+  qsa('.tab', tabs).forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const idx = qsa('.tab', tabs).indexOf(el);
+  const panels = qsa(`.tab-panel[data-group="${group}"]`);
+  panels.forEach((p, i) => p.classList.toggle('active', i === idx));
+}
+
+/* ── Server Info ─────────────────────────────────────────────── */
+async function loadServerInfo() {
+  try {
+    const d = await api('/api/discover');
+    const chips = [];
+    chips.push(`<div class="chip"><span class="dot dot-green"></span>${esc(d.hostname)}</div>`);
+    (d.ips || []).forEach(ip => chips.push(`<div class="chip">${esc(ip)}</div>`));
+    chips.push(`<div class="chip">HTTP :${d.httpPort}</div>`);
+    if (d.httpsEnabled) chips.push(`<div class="chip"><span class="dot dot-green"></span>HTTPS :${d.httpsPort}</div>`);
+    else chips.push(`<div class="chip"><span class="dot dot-red"></span>HTTPS off</div>`);
+    $('server-info').innerHTML = chips.join('');
+  } catch (e) {
+    $('server-info').innerHTML = '<div class="chip"><span class="dot dot-red"></span>connection error</div>';
+  }
+}
+
+/* ── Printers ────────────────────────────────────────────────── */
+let printers = [];
+
+async function refreshPrinters() {
+  const el = $('printer-list');
+  el.innerHTML = '<div class="loading-overlay"><span class="spinner"></span> Loading printers&hellip;</div>';
+  try {
+    printers = await api('/api/printers');
+    renderPrinters();
+    updatePrinterSelects();
+    logEntry(`Loaded ${printers.length} printer(s).`);
+  } catch (e) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">&#9888;</div>Failed to load printers.</div>';
+    logEntry('Failed to load printers: ' + e.message, 'log-err');
+  }
+}
+
+function statusClass(s) {
+  const l = (s || '').toLowerCase();
+  if (l === 'ready') return 'status-ready';
+  if (l === 'printing') return 'status-printing';
+  if (['error', 'offline', 'paperout', 'paperjam', 'dooropen', 'notoner'].includes(l)) return 'status-error';
+  return 'status-unknown';
+}
+
+function printerStateClass(p) {
+  if (p.isOnline) return 'online';
+  if (p.status && ['Offline','Error','PaperOut'].includes(p.status)) return 'offline';
+  return 'unknown';
+}
+
+function renderPrinters() {
+  const el = $('printer-list');
+  if (!printers.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">&#128424;</div>No printers installed.<br>Add one or run Auto-Discover.</div>';
+    return;
+  }
+  el.innerHTML = printers.map((p, i) => `
+    <div class="card printer-card ${printerStateClass(p)}" style="animation-delay:${i * .04}s">
+      <div class="printer-top">
+        <div class="printer-icon">&#128424;</div>
+        <span class="printer-name">${esc(p.name)}</span>
+        <span class="printer-status ${statusClass(p.status)}">
+          <span class="dot ${p.isOnline ? 'dot-green' : 'dot-red'}" style="width:5px;height:5px"></span>
+          ${esc(p.status || 'Unknown')}
+        </span>
+      </div>
+      <div class="printer-info">
+        ${p.isDefault ? '<span style="color:var(--amber)">&#9733; Default</span>' : ''}
+        <span>Queue: ${p.queuedJobs || 0}</span>
+      </div>
+      <div class="printer-actions">
+        <button class="btn" onclick="quickPrint('test','${esc(p.name)}')">&#128196; Test</button>
+        <button class="btn" onclick="quickPrint('beep','${esc(p.name)}')">&#128276; Beep</button>
+        <button class="btn" onclick="quickPrint('cut','${esc(p.name)}')">&#9986; Cut</button>
+        <button class="btn" onclick="quickPrint('drawer','${esc(p.name)}')">&#128274; Drawer</button>
+        <button class="btn" onclick="clearQueue('${esc(p.name)}')">&#128465; Queue</button>
+        <button class="btn btn-danger" onclick="removePrinter('${esc(p.name)}')">&#10005;</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updatePrinterSelects() {
+  const html = printers.map(p => `<option value="${esc(p.name)}">${esc(p.name)} — ${esc(p.status)}</option>`).join('');
+  const none = '<option value="">— no printers —</option>';
+  qsa('.printer-select').forEach(sel => { sel.innerHTML = printers.length ? html : none; });
+}
+
+/* ── Quick actions on a printer card ─────────────────────────── */
+async function quickPrint(action, name) {
+  try {
+    let r;
+    if (action === 'test')   r = await api('/api/print/test', { method:'POST', body: JSON.stringify({ printer:name, paperWidth:48 }) });
+    if (action === 'beep')   r = await api('/api/print/beep', { method:'POST', body: JSON.stringify({ printer:name, count:2, duration:3 }) });
+    if (action === 'cut')    r = await api('/api/print/cut',  { method:'POST', body: JSON.stringify({ printer:name, cutType:'full', feedLines:3 }) });
+    if (action === 'drawer') r = await api('/api/print/open-drawer', { method:'POST', body: JSON.stringify({ printer:name }) });
+    if (r && r.success) logEntry(`${action} → ${name}: ${r.message}`, 'log-ok');
+    else logEntry(`${action} → ${name}: ${(r && r.error) || 'failed'}`, 'log-err');
+  } catch (e) { logEntry(`${action} → ${name}: ${e.message}`, 'log-err'); }
+}
+
+async function clearQueue(name) {
+  try {
+    const r = await api(`/api/printers/clear/${encodeURIComponent(name)}`, { method:'POST' });
+    logEntry(r.message || 'Queue cleared', r.success ? 'log-ok' : 'log-err');
+    refreshPrinters();
+  } catch (e) { logEntry('Clear queue: ' + e.message, 'log-err'); }
+}
+
+async function removePrinter(name) {
+  if (!confirm(`Remove printer "${name}"?`)) return;
+  try {
+    const r = await api(`/api/printers/${encodeURIComponent(name)}`, { method:'DELETE' });
+    logEntry(r.message || 'Printer removed', r.success ? 'log-ok' : 'log-err');
+    refreshPrinters();
+  } catch (e) { logEntry('Remove: ' + e.message, 'log-err'); }
+}
+
+/* ── Add Network Printer ─────────────────────────────────────── */
+async function addNetworkPrinter() {
+  const ip = $('net-ip').value.trim();
+  if (!ip) { alert('IP address is required'); return; }
+  try {
+    const body = { ipAddress: ip };
+    const name = $('net-name').value.trim();
+    const drv  = $('net-driver').value.trim();
+    if (name) body.printerName = name;
+    if (drv) body.driverName = drv;
+    const r = await api('/api/printers/add', { method:'POST', body:JSON.stringify(body) });
+    logEntry(r.message, r.success ? 'log-ok' : 'log-err');
+    if (r.success) { closeModals(); refreshPrinters(); }
+  } catch (e) { logEntry('Add network printer: ' + e.message, 'log-err'); }
+}
+
+/* ── Add USB Printer ─────────────────────────────────────────── */
+async function loadUsbPorts() {
+  const sel = $('usb-device');
+  sel.innerHTML = '<option value="">Scanning...</option>';
+  try {
+    const ports = await api('/api/printers/usb');
+    if (!ports.length) { sel.innerHTML = '<option value="">No USB printers found</option>'; return; }
+    sel.innerHTML = ports.map(p => `<option value="${esc(p.deviceUri || p.name)}">${esc(p.description || p.name)}</option>`).join('');
+  } catch (e) { sel.innerHTML = '<option value="">Error scanning</option>'; }
+}
+
+async function addUsbPrinter() {
+  const uri = $('usb-device').value;
+  if (!uri) { alert('Select a USB device first'); return; }
+  try {
+    const body = { portName: uri };
+    const name = $('usb-name').value.trim();
+    const drv  = $('usb-driver').value.trim();
+    if (name) body.printerName = name;
+    if (drv) body.driverName = drv;
+    const r = await api('/api/printers/add-usb', { method:'POST', body:JSON.stringify(body) });
+    logEntry(r.message, r.success ? 'log-ok' : 'log-err');
+    if (r.success) { closeModals(); refreshPrinters(); }
+  } catch (e) { logEntry('Add USB printer: ' + e.message, 'log-err'); }
+}
+
+/* ── Auto-Discover ───────────────────────────────────────────── */
+function autoDiscover() {
+  $('discover-results').innerHTML = '';
+  openModal('modal-discover');
+  /* Pre-fill subnet from server's IP */
+  loadServerInfo().then(() => {
+    const chip = qs('#server-info .chip:nth-child(2)');
+    if (chip) {
+      const ip = chip.textContent.trim();
+      const parts = ip.split('.');
+      if (parts.length === 4) $('discover-subnet').value = parts.slice(0, 3).join('.');
+    }
+  });
+}
+
+async function runDiscover() {
+  const btn = $('discover-btn');
+  const res = $('discover-results');
+  btn.disabled = true;
+  btn.textContent = 'Scanning...';
+  res.innerHTML = '<div class="loading-overlay"><span class="spinner"></span> Scanning network and USB... This can take up to 60 seconds.</div>';
+  try {
+    const body = {};
+    const subnet = $('discover-subnet').value.trim();
+    if (subnet) body.subnet = subnet;
+    const r = await api('/api/printers/auto-discover', { method:'POST', body:JSON.stringify(body) });
+    logEntry(`Auto-discover: found ${r.totalFound}, installed ${r.totalInstalled}`, r.totalInstalled > 0 ? 'log-ok' : 'log-info');
+    if (!r.results || !r.results.length) {
+      res.innerHTML = '<div class="empty" style="padding:1rem">No printers found.</div>';
+    } else {
+      res.innerHTML = r.results.map(item => `
+        <div style="display:flex;gap:.5rem;align-items:center;padding:.4rem 0;border-bottom:1px solid var(--border);font-size:.8rem">
+          <span class="chip" style="min-width:50px;justify-content:center">${esc(item.type)}</span>
+          <span style="flex:1;font-family:var(--mono);color:var(--text-bright)">${esc(item.printerName)}</span>
+          <span class="dot ${item.success ? 'dot-green' : 'dot-red'}" style="width:6px;height:6px"></span>
+          <span style="color:${item.success ? 'var(--green)' : 'var(--red)'};font-size:.72rem">${item.success ? 'installed' : 'failed'}</span>
+        </div>
+      `).join('');
+    }
+    refreshPrinters();
+  } catch (e) {
+    res.innerHTML = `<div class="empty" style="padding:1rem;color:var(--red)">Error: ${esc(e.message)}</div>`;
+    logEntry('Auto-discover failed: ' + e.message, 'log-err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Scan Now';
+  }
+}
+
+/* ── Print: Test Page ────────────────────────────────────────── */
+async function printTest() {
+  const printer = $('test-printer').value;
+  if (!printer) { alert('Select a printer'); return; }
+  try {
+    const r = await api('/api/print/test', { method:'POST', body: JSON.stringify({ printer, paperWidth: +$('test-width').value }) });
+    logEntry(r.success ? r.message : (r.error || 'Failed'), r.success ? 'log-ok' : 'log-err');
+  } catch (e) { logEntry('Test: ' + e.message, 'log-err'); }
+}
+
+/* ── Print: Text ─────────────────────────────────────────────── */
+async function printText() {
+  const printer = $('text-printer').value;
+  const text = $('text-content').value;
+  if (!printer) { alert('Select a printer'); return; }
+  if (!text) { alert('Enter text to print'); return; }
+  try {
+    const r = await api('/api/print/text', { method:'POST', body: JSON.stringify({
+      printer, text, paperWidth: +$('text-width').value,
+      cutPaper: $('text-cut').checked, feedLines: 3
+    })});
+    logEntry(r.success ? r.message : (r.error || 'Failed'), r.success ? 'log-ok' : 'log-err');
+  } catch (e) { logEntry('Text: ' + e.message, 'log-err'); }
+}
+
+/* ── Print: Image ────────────────────────────────────────────── */
+async function printImage() {
+  const printer = $('img-printer').value;
+  const file = $('img-file').files[0];
+  if (!printer) { alert('Select a printer'); return; }
+  if (!file) { alert('Select an image file'); return; }
+  const fd = new FormData();
+  fd.append('image', file);
+  fd.append('printer', printer);
+  fd.append('paperWidth', $('img-width').value);
+  fd.append('cutPaper', $('img-cut').checked ? 'true' : 'false');
+  fd.append('feedLines', '3');
+  fd.append('brightness', $('img-brightness').value);
+  fd.append('gamma', $('img-gamma').value);
+  fd.append('dithering', $('img-dither').value);
+  fd.append('threshold', '128');
+  try {
+    const r = await api('/api/print/image', { method:'POST', body: fd });
+    logEntry(r.success ? r.message : (r.error || 'Failed'), r.success ? 'log-ok' : 'log-err');
+  } catch (e) { logEntry('Image: ' + e.message, 'log-err'); }
+}
+
+/* ── Print: Raw ──────────────────────────────────────────────── */
+async function printRaw() {
+  const printer = $('raw-printer').value;
+  const data = $('raw-data').value.trim();
+  if (!printer) { alert('Select a printer'); return; }
+  if (!data) { alert('Paste base64 ESC/POS data'); return; }
+  try {
+    const r = await api('/api/print/raw', { method:'POST', body: JSON.stringify({ printer, base64Data: data }) });
+    logEntry(r.success ? r.message : (r.error || 'Failed'), r.success ? 'log-ok' : 'log-err');
+  } catch (e) { logEntry('Raw: ' + e.message, 'log-err'); }
+}
+
+/* ── Controls: Beep / Cut / Drawer ───────────────────────────── */
+async function doBeep() { const p = $('ctrl-printer').value; if(!p) return alert('Select a printer'); quickPrint('beep', p); }
+async function doCut(type) { const p = $('ctrl-printer').value; if(!p) return alert('Select a printer');
+  try {
+    const r = await api('/api/print/cut', { method:'POST', body: JSON.stringify({ printer:p, cutType:type, feedLines:3 }) });
+    logEntry(r.success ? r.message : (r.error || 'Failed'), r.success ? 'log-ok' : 'log-err');
+  } catch (e) { logEntry('Cut: ' + e.message, 'log-err'); }
+}
+async function doOpenDrawer() { const p = $('ctrl-printer').value; if(!p) return alert('Select a printer'); quickPrint('drawer', p); }
+
+/* ── Activity Log ────────────────────────────────────────────── */
+function clearLog() { $('log').innerHTML = ''; }
+
+/* ── Init ────────────────────────────────────────────────────── */
+loadServerInfo();
+refreshPrinters();
+/* Auto-refresh every 15 seconds */
+setInterval(() => { refreshPrinters(); loadServerInfo(); }, 15000);
+</script>
+</body>
+</html>

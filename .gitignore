@@ -1,0 +1,31 @@
+build/
+*.o
+*.obj
+*.a
+*.so
+*.exe
+printer-server
+
+# Vendored deps are downloaded by scripts/fetch-vendor.sh
+vendor/mongoose.c
+vendor/mongoose.h
+vendor/cJSON.c
+vendor/cJSON.h
+vendor/stb_image.h
+
+# Certs (generated at runtime)
+*.pem
+*.der
+*.cer
+*.key
+*.crt
+
+# IDE clutter
+.vscode/
+.idea/
+*.swp
+compile_commands.json
+
+# macOS / Windows
+.DS_Store
+Thumbs.db

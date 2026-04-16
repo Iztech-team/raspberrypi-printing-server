@@ -1,0 +1,6 @@
+{
+  "port":        5123,
+  "httpsPort":   5124,
+  "enableHttps": true,
+  "wwwRoot":     "/usr/local/share/printer-server/www"
+}
