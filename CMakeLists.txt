@@ -24,7 +24,7 @@ add_compile_options(
 
 # Enable mongoose features we rely on.
 add_compile_definitions(
-  MG_ENABLE_OPENSSL=1
+  MG_TLS=MG_TLS_OPENSSL
   MG_ENABLE_IPV6=1
   MG_ENABLE_LINES=1
 )
