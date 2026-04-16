@@ -171,22 +171,10 @@ static bool dispatch_api(struct mg_connection *c, struct mg_http_message *hm) {
     return false;
 }
 
-/* Serve the root with a tiny plain-text banner; static files from www/
- * otherwise. Keeping this simple — no Swagger UI bundled. */
+/* Serve static files from www_root.  mongoose automatically serves
+ * index.html when the URI is "/", so the dashboard loads at the root. */
 static void serve_root_or_static(struct mg_connection *c,
                                  struct mg_http_message *hm) {
-    /* Root banner. */
-    if (hm->uri.len == 1 && hm->uri.buf[0] == '/') {
-        mg_http_reply(c, 200,
-            "Content-Type: text/plain; charset=utf-8\r\n"
-            "Access-Control-Allow-Origin: *\r\n",
-            "Raspberry Pi Print Server\n"
-            "Endpoints under /api/\n"
-            "See /api/discover for server info.\n");
-        return;
-    }
-
-    /* Static files from www_root. mongoose builds absolute paths safely. */
     struct mg_http_serve_opts opts = {0};
     opts.root_dir = g_config->www_root;
     opts.extra_headers = "Access-Control-Allow-Origin: *\r\n";
