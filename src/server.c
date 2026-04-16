@@ -121,6 +121,16 @@ static bool dispatch_api(struct mg_connection *c, struct mg_http_message *hm) {
         extract_name(uri, "/api/printers/clear/", name, sizeof name);
         route_post_clear_queue(c, hm, name); return true;
     }
+    if (mg_eq(method, "GET") && uri_starts_with(uri, "/api/printers/config/")) {
+        char name[256];
+        extract_name(uri, "/api/printers/config/", name, sizeof name);
+        route_get_printer_config(c, hm, name); return true;
+    }
+    if (mg_eq(method, "POST") && uri_starts_with(uri, "/api/printers/config/")) {
+        char name[256];
+        extract_name(uri, "/api/printers/config/", name, sizeof name);
+        route_post_printer_config(c, hm, name); return true;
+    }
     /* DELETE /api/printers/{name} — must come AFTER the other /api/printers/*
      * prefix matches so we don't accidentally swallow /drivers or /usb. */
     if (mg_eq(method, "DELETE") && uri_starts_with(uri, "/api/printers/")) {
