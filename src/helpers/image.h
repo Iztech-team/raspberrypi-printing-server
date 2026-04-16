@@ -22,14 +22,10 @@
 #include <stddef.h>
 
 /* 203 dpi at common receipt widths. */
-#define PRINTER_PIX_WIDTH_58MM  384
-#define PRINTER_PIX_WIDTH_80MM  576
-#define PRINTER_PIX_WIDTH_EPSON 512   /* Epson TM-T88/T20 at 80mm */
+#define PRINTER_PIX_WIDTH_58MM 384
+#define PRINTER_PIX_WIDTH_80MM 576
 
-/* Map paper character width → pixel width.
- *   32 chars = 58mm (384px)
- *   42 chars = 80mm Epson (512px)
- *   48 chars = 80mm standard (576px)  */
+/* Map paper character width → pixel width. 32 chars = 58mm, else 80mm. */
 int image_pixel_width_for(int paper_char_width);
 
 /*
