@@ -132,32 +132,36 @@ void printer_config_delete(const char *printer_name) {
 
 /* ── Resolution helpers ──────────────────────────────────────────── */
 
+/* Resolution: stored config ALWAYS wins if set. This way, once you
+ * configure a printer (e.g. Epson = 42 chars), every API caller
+ * automatically uses the right setting even if they send paperWidth=48. */
+
 int printer_config_paper_width(const char *name, int request_val, int fallback) {
-    if (request_val > 0) return request_val;
     int stored = get_int(get_printer_obj(name), "paperWidth");
-    return stored > 0 ? stored : fallback;
+    if (stored > 0) return stored;
+    return request_val > 0 ? request_val : fallback;
 }
 
 int printer_config_brightness(const char *name, int request_val, int fallback) {
-    if (request_val > 0) return request_val;
     int stored = get_int(get_printer_obj(name), "brightness");
-    return stored > 0 ? stored : fallback;
+    if (stored > 0) return stored;
+    return request_val > 0 ? request_val : fallback;
 }
 
 double printer_config_gamma(const char *name, double request_val, double fallback) {
-    if (request_val > 0.0) return request_val;
     double stored = get_double(get_printer_obj(name), "gamma");
-    return stored > 0.0 ? stored : fallback;
+    if (stored > 0.0) return stored;
+    return request_val > 0.0 ? request_val : fallback;
 }
 
 int printer_config_threshold(const char *name, int request_val, int fallback) {
-    if (request_val > 0) return request_val;
     int stored = get_int(get_printer_obj(name), "threshold");
-    return stored > 0 ? stored : fallback;
+    if (stored > 0) return stored;
+    return request_val > 0 ? request_val : fallback;
 }
 
 const char *printer_config_dithering(const char *name, const char *request_val, const char *fallback) {
-    if (request_val && *request_val) return request_val;
     const char *stored = get_string(get_printer_obj(name), "dithering");
-    return stored ? stored : fallback;
+    if (stored) return stored;
+    return (request_val && *request_val) ? request_val : fallback;
 }
