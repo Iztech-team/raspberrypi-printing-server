@@ -13,7 +13,6 @@
  */
 #include "server.h"
 #include "services/cert_service.h"
-#include "services/printer_config.h"
 #include "helpers/response.h"
 #include "../vendor/cJSON.h"
 
@@ -97,9 +96,6 @@ int main(int argc, char *argv[]) {
            cfg.https_port, cfg.https_enabled ? "enabled" : "disabled");
     printf("[server] www root : %s\n", cfg.www_root);
     printf("[server] config   : %s\n", config_path);
-
-    /* ── Per-printer config ───────────────────────────────────── */
-    printer_config_init();
 
     /* ── TLS setup ────────────────────────────────────────────── */
     struct mg_tls_opts tls_opts = {0};

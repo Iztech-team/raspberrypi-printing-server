@@ -15,7 +15,5 @@ void route_post_auto_discover (struct mg_connection *c, struct mg_http_message *
 void route_delete_printer     (struct mg_connection *c, struct mg_http_message *hm, const char *name);
 void route_post_clear_queue   (struct mg_connection *c, struct mg_http_message *hm, const char *name);
 void route_get_printer_status (struct mg_connection *c, struct mg_http_message *hm, const char *name);
-void route_get_printer_config (struct mg_connection *c, struct mg_http_message *hm, const char *name);
-void route_post_printer_config(struct mg_connection *c, struct mg_http_message *hm, const char *name);
 
 #endif

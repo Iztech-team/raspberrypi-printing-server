@@ -7,7 +7,6 @@
  */
 #include "printers.h"
 #include "../services/cups_service.h"
-#include "../services/printer_config.h"
 #include "../helpers/response.h"
 #include "../../vendor/cJSON.h"
 
@@ -199,33 +198,4 @@ void route_get_printer_status(struct mg_connection *c, struct mg_http_message *h
     cJSON_AddStringToObject(o, "status",     d.status);
     cJSON_AddNumberToObject(o, "queuedJobs", d.queued_jobs);
     send_json(c, 200, o);
-}
-
-/* GET /api/printers/config/{name} */
-void route_get_printer_config(struct mg_connection *c, struct mg_http_message *hm,
-                              const char *name) {
-    (void)hm;
-    cJSON *cfg = printer_config_get_json(name);
-    if (!cfg) cfg = cJSON_CreateObject();
-    cJSON_AddStringToObject(cfg, "printer", name);
-    send_json(c, 200, cfg);
-}
-
-/* POST /api/printers/config/{name} */
-void route_post_printer_config(struct mg_connection *c, struct mg_http_message *hm,
-                               const char *name) {
-    char *body = mg_str_to_cstr(hm->body);
-    cJSON *req = body ? cJSON_Parse(body) : NULL;
-    free(body);
-
-    if (!req) {
-        send_simple(c, 400, false, "Invalid JSON body.");
-        return;
-    }
-
-    bool ok = printer_config_set_from_json(name, req);
-    cJSON_Delete(req);
-
-    if (ok) send_simple(c, 200, true, "Printer configuration saved.");
-    else    send_simple(c, 500, false, "Failed to save printer configuration.");
 }

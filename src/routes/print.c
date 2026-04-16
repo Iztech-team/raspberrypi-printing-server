@@ -7,7 +7,6 @@
  */
 #include "print.h"
 #include "../services/print_service.h"
-#include "../services/printer_config.h"
 #include "../helpers/response.h"
 #include "../../vendor/cJSON.h"
 
@@ -182,8 +181,7 @@ void route_post_print_text(struct mg_connection *c, struct mg_http_message *hm) 
 
     const char *printer    = json_str_or   (req, "printer",   "");
     const char *text       = json_str_or   (req, "text",      "");
-    int         paper_w_r  = json_int_or   (req, "paperWidth", -1);
-    int         paper_w    = printer_config_paper_width(printer, paper_w_r, 48);
+    int         paper_w    = json_int_or   (req, "paperWidth", 48);
     bool        cut_paper  = json_bool_or  (req, "cutPaper",  true);
     int         feed_lines = json_int_or   (req, "feedLines", 3);
 
@@ -200,8 +198,7 @@ void route_post_print_test(struct mg_connection *c, struct mg_http_message *hm) 
     free(body);
 
     const char *printer = json_str_or(req, "printer",   "");
-    int         paper_w_r = json_int_or(req, "paperWidth", -1);
-    int         paper_w = printer_config_paper_width(printer, paper_w_r, 48);
+    int         paper_w = json_int_or(req, "paperWidth", 48);
 
     print_response_t r;
     print_service_test(printer, paper_w, &r);
@@ -335,13 +332,12 @@ void route_post_print_image(struct mg_connection *c, struct mg_http_message *hm)
         return;
     }
 
-    /* Numeric/bool form fields — resolve against per-printer config. */
+    /* Numeric/bool form fields (all optional, with Windows defaults). */
     char buf[64];
 
-    int paper_w_raw = -1;
+    int paper_w = 48;
     copy_str(buf, sizeof buf, multipart_field(hm, "paperWidth"));
-    if (buf[0]) paper_w_raw = atoi(buf);
-    int paper_w = printer_config_paper_width(printer, paper_w_raw, 48);
+    if (buf[0]) paper_w = atoi(buf);
 
     bool cut_paper = true;
     copy_str(buf, sizeof buf, multipart_field(hm, "cutPaper"));
@@ -351,26 +347,21 @@ void route_post_print_image(struct mg_connection *c, struct mg_http_message *hm)
     copy_str(buf, sizeof buf, multipart_field(hm, "feedLines"));
     if (buf[0]) feed_lines = atoi(buf);
 
-    int brightness_raw = -1;
+    int brightness = 130;
     copy_str(buf, sizeof buf, multipart_field(hm, "brightness"));
-    if (buf[0]) brightness_raw = atoi(buf);
-    int brightness = printer_config_brightness(printer, brightness_raw, 130);
+    if (buf[0]) brightness = atoi(buf);
 
-    double gamma_raw = -1.0;
+    double gamma = 1.8;
     copy_str(buf, sizeof buf, multipart_field(hm, "gamma"));
-    if (buf[0]) gamma_raw = atof(buf);
-    double gamma = printer_config_gamma(printer, gamma_raw, 1.8);
+    if (buf[0]) gamma = atof(buf);
 
-    char dithering_raw[32] = {0};
-    copy_str(dithering_raw, sizeof dithering_raw, multipart_field(hm, "dithering"));
-    const char *dithering_val = printer_config_dithering(printer, dithering_raw[0] ? dithering_raw : NULL, "floyd-steinberg");
-    char dithering[32];
-    snprintf(dithering, sizeof dithering, "%s", dithering_val);
+    char dithering[32] = "floyd-steinberg";
+    copy_str(dithering, sizeof dithering, multipart_field(hm, "dithering"));
+    if (!dithering[0]) snprintf(dithering, sizeof dithering, "floyd-steinberg");
 
-    int threshold_raw = -1;
+    int threshold = 128;
     copy_str(buf, sizeof buf, multipart_field(hm, "threshold"));
-    if (buf[0]) threshold_raw = atoi(buf);
-    int threshold = printer_config_threshold(printer, threshold_raw, 128);
+    if (buf[0]) threshold = atoi(buf);
 
     print_response_t r;
     print_service_image(printer,
