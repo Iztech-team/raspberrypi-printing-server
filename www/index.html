@@ -395,6 +395,40 @@ textarea.input{resize:vertical;min-height:80px;font-family:var(--mono);font-size
 </div>
 </div>
 
+<!-- ══ MODAL: Printer Config ══════════════════════════════════ -->
+<div class="modal-bg" id="modal-printer-config" onclick="if(event.target===this)closeModals()">
+<div class="modal">
+  <h2 id="config-modal-title">Configure Printer</h2>
+  <input type="hidden" id="config-printer-name">
+  <div class="form-group" style="margin-bottom:.6rem"><label>Paper Width</label>
+    <select class="input" id="config-paperWidth">
+      <option value="">Default (48 chars / 80mm)</option>
+      <option value="48">80mm Standard (48 chars / 576px)</option>
+      <option value="42">80mm Epson (42 chars / 512px)</option>
+      <option value="32">58mm (32 chars / 384px)</option>
+    </select>
+  </div>
+  <div class="form-group" style="margin-bottom:.6rem"><label>Brightness (50-200, default 130)</label>
+    <input type="number" class="input" id="config-brightness" placeholder="130" min="50" max="200">
+  </div>
+  <div class="form-group" style="margin-bottom:.6rem"><label>Gamma (0.5-3.0, default 1.8)</label>
+    <input type="number" class="input" id="config-gamma" placeholder="1.8" min="0.5" max="3.0" step="0.1">
+  </div>
+  <div class="form-group" style="margin-bottom:.6rem"><label>Dithering</label>
+    <select class="input" id="config-dithering">
+      <option value="">Default (Floyd-Steinberg)</option>
+      <option value="floyd-steinberg">Floyd-Steinberg</option>
+      <option value="atkinson">Atkinson</option>
+      <option value="threshold">Threshold</option>
+    </select>
+  </div>
+  <div class="modal-footer">
+    <button class="btn" onclick="closeModals()">Cancel</button>
+    <button class="btn btn-primary" onclick="savePrinterConfig()">Save</button>
+  </div>
+</div>
+</div>
+
 <script>
 /* ══════════════════════════════════════════════════════════════
    Raspberry Pi Print Server — Dashboard
@@ -515,6 +549,7 @@ function renderPrinters() {
         <button class="btn" onclick="quickPrint('beep','${jsesc(p.name)}',this)">&#128276; Beep</button>
         <button class="btn" onclick="quickPrint('cut','${jsesc(p.name)}',this)">&#9986; Cut</button>
         <button class="btn" onclick="quickPrint('drawer','${jsesc(p.name)}',this)">&#128274; Drawer</button>
+        <button class="btn" onclick="openPrinterConfig('${jsesc(p.name)}')">&#9881; Config</button>
         <button class="btn" onclick="clearQueue('${jsesc(p.name)}')">&#128465; Queue</button>
         <button class="btn btn-danger" onclick="removePrinter('${jsesc(p.name)}')">&#10005;</button>
       </div>
@@ -534,7 +569,7 @@ async function quickPrint(action, name, btn) {
   if (btn) { btn.disabled = true; btn._txt = btn.innerHTML; btn.innerHTML = '<span class="spinner"></span>'; }
   try {
     let r;
-    if (action === 'test')   r = await api('/api/print/test', { method:'POST', body: JSON.stringify({ printer:name, paperWidth:48 }) });
+    if (action === 'test')   r = await api('/api/print/test', { method:'POST', body: JSON.stringify({ printer:name }) });
     if (action === 'beep')   r = await api('/api/print/beep', { method:'POST', body: JSON.stringify({ printer:name, count:2, duration:3 }) });
     if (action === 'cut')    r = await api('/api/print/cut',  { method:'POST', body: JSON.stringify({ printer:name, cutType:'full', feedLines:3 }) });
     if (action === 'drawer') r = await api('/api/print/open-drawer', { method:'POST', body: JSON.stringify({ printer:name }) });
@@ -731,6 +766,46 @@ async function doOpenDrawer(btn) { const p = $('ctrl-printer').value; if(!p) ret
 
 /* ── Activity Log ────────────────────────────────────────────── */
 function clearLog() { $('log').innerHTML = ''; }
+
+/* ── Printer Config ─────────────────────────────────────────── */
+async function openPrinterConfig(name) {
+  $('config-printer-name').value = name;
+  $('config-modal-title').textContent = 'Configure: ' + name;
+  /* Reset fields */
+  $('config-paperWidth').value = '';
+  $('config-brightness').value = '';
+  $('config-gamma').value = '';
+  $('config-dithering').value = '';
+  /* Load existing config */
+  try {
+    const cfg = await api('/api/printers/config/' + encodeURIComponent(name));
+    if (cfg.paperWidth) $('config-paperWidth').value = String(cfg.paperWidth);
+    if (cfg.brightness) $('config-brightness').value = cfg.brightness;
+    if (cfg.gamma)      $('config-gamma').value = cfg.gamma;
+    if (cfg.dithering)  $('config-dithering').value = cfg.dithering;
+  } catch (e) { /* no config yet */ }
+  openModal('modal-printer-config');
+}
+
+async function savePrinterConfig() {
+  const name = $('config-printer-name').value;
+  const body = {};
+  const pw = $('config-paperWidth').value;
+  if (pw) body.paperWidth = +pw;
+  const br = $('config-brightness').value;
+  if (br) body.brightness = +br;
+  const gm = $('config-gamma').value;
+  if (gm) body.gamma = +gm;
+  const di = $('config-dithering').value;
+  if (di) body.dithering = di;
+  try {
+    const r = await api('/api/printers/config/' + encodeURIComponent(name), {
+      method: 'POST', body: JSON.stringify(body)
+    });
+    logEntry(r.message || 'Config saved', r.success ? 'log-ok' : 'log-err');
+    if (r.success) closeModals();
+  } catch (e) { logEntry('Config save: ' + e.message, 'log-err'); }
+}
 
 /* ── Init ────────────────────────────────────────────────────── */
 loadServerInfo();

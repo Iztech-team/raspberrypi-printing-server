@@ -80,6 +80,7 @@ set(SRC
   src/services/cups_service.c
   src/services/cert_service.c
   src/services/print_service.c
+  src/services/printer_config.c
 
   src/helpers/response.c
   src/helpers/escpos.c
