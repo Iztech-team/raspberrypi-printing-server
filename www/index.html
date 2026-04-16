@@ -262,7 +262,7 @@ textarea.input{resize:vertical;min-height:80px;font-family:var(--mono);font-size
         <div class="form-group" style="flex:1"><label>Paper Width</label>
           <select class="input" id="test-width"><option value="48">80mm (48 chars)</option><option value="32">58mm (32 chars)</option></select>
         </div>
-        <button class="btn btn-primary" style="height:36px;align-self:flex-end" onclick="printTest()">Print Test Page</button>
+        <button class="btn btn-primary" style="height:36px;align-self:flex-end" onclick="printTest(this)">Print Test Page</button>
       </div>
     </div>
 
@@ -281,7 +281,7 @@ textarea.input{resize:vertical;min-height:80px;font-family:var(--mono);font-size
         <label style="font-size:.75rem;display:flex;align-items:center;gap:.3rem;color:var(--text-dim)">
           <input type="checkbox" id="text-cut" checked> Cut after print
         </label>
-        <button class="btn btn-primary" style="margin-left:auto" onclick="printText()">Print Text</button>
+        <button class="btn btn-primary" style="margin-left:auto" onclick="printText(this)">Print Text</button>
       </div>
     </div>
 
@@ -307,7 +307,7 @@ textarea.input{resize:vertical;min-height:80px;font-family:var(--mono);font-size
         <label style="font-size:.75rem;display:flex;align-items:center;gap:.3rem;color:var(--text-dim)">
           <input type="checkbox" id="img-cut" checked> Cut after print
         </label>
-        <button class="btn btn-primary" style="margin-left:auto" onclick="printImage()">Print Image</button>
+        <button class="btn btn-primary" style="margin-left:auto" onclick="printImage(this)">Print Image</button>
       </div>
     </div>
 
@@ -320,7 +320,7 @@ textarea.input{resize:vertical;min-height:80px;font-family:var(--mono);font-size
         <textarea class="input" id="raw-data" placeholder="G0AbbQAbYQE="></textarea>
       </div>
       <div class="form-row">
-        <button class="btn btn-primary" style="margin-left:auto" onclick="printRaw()">Send Raw Data</button>
+        <button class="btn btn-primary" style="margin-left:auto" onclick="printRaw(this)">Send Raw Data</button>
       </div>
     </div>
 
@@ -330,10 +330,10 @@ textarea.input{resize:vertical;min-height:80px;font-family:var(--mono);font-size
         <div class="form-group" style="flex:2"><label>Printer</label><select class="input printer-select" id="ctrl-printer"></select></div>
       </div>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-        <button class="btn" onclick="doBeep()">&#128276; Beep</button>
-        <button class="btn" onclick="doCut('full')">&#9986; Full Cut</button>
-        <button class="btn" onclick="doCut('partial')">&#9986; Partial Cut</button>
-        <button class="btn btn-accent" onclick="doOpenDrawer()">&#128274; Open Drawer</button>
+        <button class="btn" onclick="doBeep(this)">&#128276; Beep</button>
+        <button class="btn" onclick="doCut('full',this)">&#9986; Full Cut</button>
+        <button class="btn" onclick="doCut('partial',this)">&#9986; Partial Cut</button>
+        <button class="btn btn-accent" onclick="doOpenDrawer(this)">&#128274; Open Drawer</button>
       </div>
     </div>
   </div>
@@ -424,6 +424,8 @@ function logEntry(msg, cls = 'log-info') {
 }
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+/* Escape for safe use inside JS single-quoted strings in onclick attributes */
+function jsesc(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/</g, '\\x3c'); }
 
 function openModal(id) {
   $(id).classList.add('open');
@@ -508,12 +510,12 @@ function renderPrinters() {
         <span>Queue: ${p.queuedJobs || 0}</span>
       </div>
       <div class="printer-actions">
-        <button class="btn" onclick="quickPrint('test','${esc(p.name)}')">&#128196; Test</button>
-        <button class="btn" onclick="quickPrint('beep','${esc(p.name)}')">&#128276; Beep</button>
-        <button class="btn" onclick="quickPrint('cut','${esc(p.name)}')">&#9986; Cut</button>
-        <button class="btn" onclick="quickPrint('drawer','${esc(p.name)}')">&#128274; Drawer</button>
-        <button class="btn" onclick="clearQueue('${esc(p.name)}')">&#128465; Queue</button>
-        <button class="btn btn-danger" onclick="removePrinter('${esc(p.name)}')">&#10005;</button>
+        <button class="btn" onclick="quickPrint('test','${jsesc(p.name)}',this)">&#128196; Test</button>
+        <button class="btn" onclick="quickPrint('beep','${jsesc(p.name)}',this)">&#128276; Beep</button>
+        <button class="btn" onclick="quickPrint('cut','${jsesc(p.name)}',this)">&#9986; Cut</button>
+        <button class="btn" onclick="quickPrint('drawer','${jsesc(p.name)}',this)">&#128274; Drawer</button>
+        <button class="btn" onclick="clearQueue('${jsesc(p.name)}')">&#128465; Queue</button>
+        <button class="btn btn-danger" onclick="removePrinter('${jsesc(p.name)}')">&#10005;</button>
       </div>
     </div>
   `).join('');
@@ -526,7 +528,9 @@ function updatePrinterSelects() {
 }
 
 /* ── Quick actions on a printer card ─────────────────────────── */
-async function quickPrint(action, name) {
+async function quickPrint(action, name, btn) {
+  /* Disable the clicked button and show spinner while running */
+  if (btn) { btn.disabled = true; btn._txt = btn.innerHTML; btn.innerHTML = '<span class="spinner"></span>'; }
   try {
     let r;
     if (action === 'test')   r = await api('/api/print/test', { method:'POST', body: JSON.stringify({ printer:name, paperWidth:48 }) });
@@ -536,6 +540,7 @@ async function quickPrint(action, name) {
     if (r && r.success) logEntry(`${action} → ${name}: ${r.message}`, 'log-ok');
     else logEntry(`${action} → ${name}: ${(r && r.error) || 'failed'}`, 'log-err');
   } catch (e) { logEntry(`${action} → ${name}: ${e.message}`, 'log-err'); }
+  finally { if (btn) { btn.disabled = false; btn.innerHTML = btn._txt; } }
 }
 
 async function clearQueue(name) {
@@ -601,15 +606,13 @@ async function addUsbPrinter() {
 function autoDiscover() {
   $('discover-results').innerHTML = '';
   openModal('modal-discover');
-  /* Pre-fill subnet from server's IP */
-  loadServerInfo().then(() => {
-    const chip = qs('#server-info .chip:nth-child(2)');
-    if (chip) {
-      const ip = chip.textContent.trim();
-      const parts = ip.split('.');
+  /* Pre-fill subnet from server's discover endpoint */
+  api('/api/discover').then(d => {
+    if (d.ips && d.ips.length) {
+      const parts = d.ips[0].split('.');
       if (parts.length === 4) $('discover-subnet').value = parts.slice(0, 3).join('.');
     }
-  });
+  }).catch(() => {});
 }
 
 async function runDiscover() {
@@ -647,21 +650,24 @@ async function runDiscover() {
 }
 
 /* ── Print: Test Page ────────────────────────────────────────── */
-async function printTest() {
+async function printTest(btn) {
   const printer = $('test-printer').value;
   if (!printer) { alert('Select a printer'); return; }
+  if (btn) { btn.disabled = true; btn._txt = btn.innerHTML; btn.innerHTML = '<span class="spinner"></span> Printing...'; }
   try {
     const r = await api('/api/print/test', { method:'POST', body: JSON.stringify({ printer, paperWidth: +$('test-width').value }) });
     logEntry(r.success ? r.message : (r.error || 'Failed'), r.success ? 'log-ok' : 'log-err');
   } catch (e) { logEntry('Test: ' + e.message, 'log-err'); }
+  finally { if (btn) { btn.disabled = false; btn.innerHTML = btn._txt; } }
 }
 
 /* ── Print: Text ─────────────────────────────────────────────── */
-async function printText() {
+async function printText(btn) {
   const printer = $('text-printer').value;
   const text = $('text-content').value;
   if (!printer) { alert('Select a printer'); return; }
   if (!text) { alert('Enter text to print'); return; }
+  if (btn) { btn.disabled = true; btn._txt = btn.innerHTML; btn.innerHTML = '<span class="spinner"></span> Printing...'; }
   try {
     const r = await api('/api/print/text', { method:'POST', body: JSON.stringify({
       printer, text, paperWidth: +$('text-width').value,
@@ -669,14 +675,16 @@ async function printText() {
     })});
     logEntry(r.success ? r.message : (r.error || 'Failed'), r.success ? 'log-ok' : 'log-err');
   } catch (e) { logEntry('Text: ' + e.message, 'log-err'); }
+  finally { if (btn) { btn.disabled = false; btn.innerHTML = btn._txt; } }
 }
 
 /* ── Print: Image ────────────────────────────────────────────── */
-async function printImage() {
+async function printImage(btn) {
   const printer = $('img-printer').value;
   const file = $('img-file').files[0];
   if (!printer) { alert('Select a printer'); return; }
   if (!file) { alert('Select an image file'); return; }
+  if (btn) { btn.disabled = true; btn._txt = btn.innerHTML; btn.innerHTML = '<span class="spinner"></span> Printing...'; }
   const fd = new FormData();
   fd.append('image', file);
   fd.append('printer', printer);
@@ -691,29 +699,34 @@ async function printImage() {
     const r = await api('/api/print/image', { method:'POST', body: fd });
     logEntry(r.success ? r.message : (r.error || 'Failed'), r.success ? 'log-ok' : 'log-err');
   } catch (e) { logEntry('Image: ' + e.message, 'log-err'); }
+  finally { if (btn) { btn.disabled = false; btn.innerHTML = btn._txt; } }
 }
 
 /* ── Print: Raw ──────────────────────────────────────────────── */
-async function printRaw() {
+async function printRaw(btn) {
   const printer = $('raw-printer').value;
   const data = $('raw-data').value.trim();
   if (!printer) { alert('Select a printer'); return; }
   if (!data) { alert('Paste base64 ESC/POS data'); return; }
+  if (btn) { btn.disabled = true; btn._txt = btn.innerHTML; btn.innerHTML = '<span class="spinner"></span> Sending...'; }
   try {
     const r = await api('/api/print/raw', { method:'POST', body: JSON.stringify({ printer, base64Data: data }) });
     logEntry(r.success ? r.message : (r.error || 'Failed'), r.success ? 'log-ok' : 'log-err');
   } catch (e) { logEntry('Raw: ' + e.message, 'log-err'); }
+  finally { if (btn) { btn.disabled = false; btn.innerHTML = btn._txt; } }
 }
 
 /* ── Controls: Beep / Cut / Drawer ───────────────────────────── */
-async function doBeep() { const p = $('ctrl-printer').value; if(!p) return alert('Select a printer'); quickPrint('beep', p); }
-async function doCut(type) { const p = $('ctrl-printer').value; if(!p) return alert('Select a printer');
+async function doBeep(btn) { const p = $('ctrl-printer').value; if(!p) return alert('Select a printer'); quickPrint('beep', p, btn); }
+async function doCut(type, btn) { const p = $('ctrl-printer').value; if(!p) return alert('Select a printer');
+  if (btn) { btn.disabled = true; btn._txt = btn.innerHTML; btn.innerHTML = '<span class="spinner"></span>'; }
   try {
     const r = await api('/api/print/cut', { method:'POST', body: JSON.stringify({ printer:p, cutType:type, feedLines:3 }) });
     logEntry(r.success ? r.message : (r.error || 'Failed'), r.success ? 'log-ok' : 'log-err');
   } catch (e) { logEntry('Cut: ' + e.message, 'log-err'); }
+  finally { if (btn) { btn.disabled = false; btn.innerHTML = btn._txt; } }
 }
-async function doOpenDrawer() { const p = $('ctrl-printer').value; if(!p) return alert('Select a printer'); quickPrint('drawer', p); }
+async function doOpenDrawer(btn) { const p = $('ctrl-printer').value; if(!p) return alert('Select a printer'); quickPrint('drawer', p, btn); }
 
 /* ── Activity Log ────────────────────────────────────────────── */
 function clearLog() { $('log').innerHTML = ''; }
