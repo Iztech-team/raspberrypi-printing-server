@@ -364,7 +364,15 @@ void print_service_image(const char *printer,
 
     escpos_t *b = escpos_new();
     escpos_initialize(b);
-    escpos_align(b, ALIGN_CENTER);
+    /* Reset left margin to 0 (GS L) and set print area to full width (GS W)
+     * so raster images start at the left edge without clipping. */
+    {
+        uint8_t margin_cmd[] = { 0x1D, 0x4C, 0x00, 0x00 };  /* GS L = 0 */
+        escpos_raw(b, margin_cmd, sizeof margin_cmd);
+        uint8_t width_cmd[] = { 0x1D, 0x57, (uint8_t)(pix_w & 0xFF), (uint8_t)((pix_w >> 8) & 0xFF) };  /* GS W */
+        escpos_raw(b, width_cmd, sizeof width_cmd);
+    }
+    escpos_align(b, ALIGN_LEFT);
     escpos_raw(b, raster, raster_len);
     escpos_line(b, "");
     if (cut_paper) {

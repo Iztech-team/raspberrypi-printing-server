@@ -721,16 +721,13 @@ async function printImage(btn) {
   if (!printer) { alert('Select a printer'); return; }
   if (!file) { alert('Select an image file'); return; }
   if (btn) { btn.disabled = true; btn._txt = btn.innerHTML; btn.innerHTML = '<span class="spinner"></span> Printing...'; }
+  /* Don't send paperWidth/brightness/gamma/dithering — let the server
+     use the per-printer config stored via the Config button. */
   const fd = new FormData();
   fd.append('image', file);
   fd.append('printer', printer);
-  fd.append('paperWidth', $('img-width').value);
   fd.append('cutPaper', $('img-cut').checked ? 'true' : 'false');
   fd.append('feedLines', '3');
-  fd.append('brightness', $('img-brightness').value);
-  fd.append('gamma', $('img-gamma').value);
-  fd.append('dithering', $('img-dither').value);
-  fd.append('threshold', '128');
   try {
     const r = await api('/api/print/image', { method:'POST', body: fd });
     logEntry(r.success ? r.message : (r.error || 'Failed'), r.success ? 'log-ok' : 'log-err');
