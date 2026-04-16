@@ -182,7 +182,7 @@ void route_post_print_text(struct mg_connection *c, struct mg_http_message *hm) 
 
     const char *printer    = json_str_or   (req, "printer",   "");
     const char *text       = json_str_or   (req, "text",      "");
-    int         paper_w    = printer_config_paper_width(printer, json_int_or(req, "paperWidth", -1), 48);
+    int         paper_w    = printer_config_paper_width(printer, json_int_or(req, "paperWidth", -1), 42);
     bool        cut_paper  = json_bool_or  (req, "cutPaper",  true);
     int         feed_lines = json_int_or   (req, "feedLines", 3);
 
@@ -199,7 +199,7 @@ void route_post_print_test(struct mg_connection *c, struct mg_http_message *hm) 
     free(body);
 
     const char *printer = json_str_or(req, "printer",   "");
-    int         paper_w = printer_config_paper_width(printer, json_int_or(req, "paperWidth", -1), 48);
+    int         paper_w = printer_config_paper_width(printer, json_int_or(req, "paperWidth", -1), 42);
 
     print_response_t r;
     print_service_test(printer, paper_w, &r);
@@ -339,7 +339,7 @@ void route_post_print_image(struct mg_connection *c, struct mg_http_message *hm)
     int paper_w_raw = -1;
     copy_str(buf, sizeof buf, multipart_field(hm, "paperWidth"));
     if (buf[0]) paper_w_raw = atoi(buf);
-    int paper_w = printer_config_paper_width(printer, paper_w_raw, 48);
+    int paper_w = printer_config_paper_width(printer, paper_w_raw, 42);
 
     bool cut_paper = true;
     copy_str(buf, sizeof buf, multipart_field(hm, "cutPaper"));

@@ -261,7 +261,7 @@ textarea.input{resize:vertical;min-height:80px;font-family:var(--mono);font-size
       <div class="form-row">
         <div class="form-group" style="flex:2"><label>Printer</label><select class="input printer-select" id="test-printer"></select></div>
         <div class="form-group" style="flex:1"><label>Paper Width</label>
-          <select class="input" id="test-width"><option value="48">80mm (48 chars)</option><option value="32">58mm (32 chars)</option></select>
+          <select class="input" id="test-width"><option value="42">80mm (42 chars / 512px)</option><option value="48">80mm Wide (48 chars / 576px)</option><option value="32">58mm (32 chars / 384px)</option></select>
         </div>
         <button class="btn btn-primary" style="height:36px;align-self:flex-end" onclick="printTest(this)">Print Test Page</button>
       </div>
@@ -402,9 +402,9 @@ textarea.input{resize:vertical;min-height:80px;font-family:var(--mono);font-size
   <input type="hidden" id="config-printer-name">
   <div class="form-group" style="margin-bottom:.6rem"><label>Paper Width</label>
     <select class="input" id="config-paperWidth">
-      <option value="">Default (48 chars / 80mm)</option>
-      <option value="48">80mm Standard (48 chars / 576px)</option>
-      <option value="42">80mm Epson (42 chars / 512px)</option>
+      <option value="">Default (42 chars / 512px)</option>
+      <option value="42">80mm (42 chars / 512px)</option>
+      <option value="48">80mm Wide (48 chars / 576px)</option>
       <option value="32">58mm (32 chars / 384px)</option>
     </select>
   </div>

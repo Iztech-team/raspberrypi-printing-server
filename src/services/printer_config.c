@@ -139,7 +139,7 @@ void printer_config_delete(const char *printer_name) {
 int printer_config_paper_width(const char *name, int request_val, int fallback) {
     int stored = get_int(get_printer_obj(name), "paperWidth");
     if (stored > 0) return stored;
-    return request_val > 0 ? request_val : fallback;
+    return request_val > 0 ? request_val : 42;  /* default to 42 chars (512px Epson) */
 }
 
 int printer_config_brightness(const char *name, int request_val, int fallback) {

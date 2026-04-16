@@ -344,7 +344,7 @@ void print_service_image(const char *printer,
         return;
     }
 
-    int pix_w = image_pixel_width_for(paper_width > 0 ? paper_width : 48);
+    int pix_w = image_pixel_width_for(paper_width > 0 ? paper_width : 42);
 
     char img_err[512] = {0};
     size_t raster_len = 0;
