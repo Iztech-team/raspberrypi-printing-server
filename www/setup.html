@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <title>Print Server Setup</title>
+    <style>
+      :root {
+        --bg: #080c12;
+        --card: #121a26;
+        --card-border: #1a2738;
+        --card-hover: #162030;
+        --muted: #0e1520;
+        --muted-fg: #6a7a8a;
+        --border: #1a2738;
+        --fg: #eaf0f6;
+        --fg2: #c5cdd8;
+        --fg3: #6a7a8a;
+        --primary: #00e68a;
+        --primary-fg: #080c12;
+        --accent: #00e68a;
+        --accent-fg: #080c12;
+        --success: #00e68a;
+        --success-bg: rgba(0, 230, 138, 0.08);
+        --destructive: #f04050;
+        --destructive-bg: rgba(240, 64, 80, 0.08);
+        --ring: #00e68a;
+        --radius: 12px;
+        --blue: #4da6ff;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          "IBM Plex Sans", -apple-system, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        min-height: 100vh;
+        min-height: 100dvh;
+        -webkit-font-smoothing: antialiased;
+        background-image:
+          radial-gradient(circle at 1px 1px, #ffffff06 1px, transparent 0);
+        background-size: 28px 28px;
+      }
+
+      .container {
+        max-width: 520px;
+        margin: 0 auto;
+        padding: 20px 16px 48px;
+      }
+
+      /* Header */
+      .header {
+        text-align: center;
+        padding: 32px 0 24px;
+      }
+      .logo {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #00e68a, #00b0ff);
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        color: #080c12;
+        font-weight: 800;
+        font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+        margin-bottom: 16px;
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.06),
+          0 8px 24px rgba(0, 230, 138, 0.2);
+      }
+      h1 {
+        font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        margin-bottom: 6px;
+      }
+      .subtitle {
+        color: var(--fg3);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      /* Language toggle */
+      .lang-toggle {
+        display: flex;
+        justify-content: center;
+        margin: 0 0 24px;
+        gap: 0;
+        direction: ltr;
+      }
+      .lang-toggle button {
+        background: var(--muted);
+        border: 1px solid var(--border);
+        padding: 8px 20px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--fg3);
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.15s ease;
+      }
+      .lang-toggle button:first-child {
+        border-radius: 8px 0 0 8px;
+        border-right: none;
+      }
+      .lang-toggle button:last-child {
+        border-radius: 0 8px 8px 0;
+      }
+      .lang-toggle button.active {
+        background: var(--accent);
+        color: var(--accent-fg);
+        border-color: var(--accent);
+        position: relative;
+        z-index: 1;
+        font-weight: 600;
+      }
+
+      /* Status badge */
+      .status-badge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 16px;
+        border-radius: 9999px;
+        font-size: 13px;
+        font-weight: 500;
+        font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+        margin: 0 auto 12px;
+        width: fit-content;
+      }
+      .status-badge .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .status-badge.ok {
+        background: var(--success-bg);
+        color: var(--success);
+        border: 1px solid rgba(0, 230, 138, 0.15);
+      }
+      .status-badge.ok .dot {
+        background: var(--success);
+        box-shadow: 0 0 6px var(--success);
+      }
+      .status-badge.err {
+        background: var(--destructive-bg);
+        color: var(--destructive);
+        border: 1px solid rgba(240, 64, 80, 0.15);
+      }
+      .status-badge.err .dot {
+        background: var(--destructive);
+      }
+      .status-badge.load {
+        background: rgba(77, 166, 255, 0.08);
+        color: var(--blue);
+        border: 1px solid rgba(77, 166, 255, 0.15);
+      }
+      .status-badge.load .dot {
+        background: var(--blue);
+        animation: pulse 1.5s ease infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      /* Info chips */
+      .info-chips {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-bottom: 28px;
+        direction: ltr;
+      }
+      .chip {
+        background: var(--muted);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 4px 10px;
+        font-size: 12px;
+        color: var(--fg3);
+        font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+      }
+      .chip b {
+        color: var(--fg2);
+        font-weight: 500;
+      }
+
+      /* Card */
+      .card {
+        background: var(--card);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius);
+        padding: 20px;
+        margin-bottom: 12px;
+        transition: border-color 0.2s;
+      }
+      .card:hover {
+        border-color: #243448;
+      }
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .step-num {
+        width: 28px;
+        height: 28px;
+        background: var(--muted);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 700;
+        font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+        color: var(--fg2);
+        flex-shrink: 0;
+      }
+      .card-label {
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .card-desc {
+        color: var(--fg3);
+        font-size: 13px;
+        line-height: 1.6;
+        margin-bottom: 16px;
+      }
+
+      /* Steps list */
+      .steps {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        margin-bottom: 4px;
+      }
+      .step-item {
+        display: flex;
+        gap: 12px;
+        position: relative;
+      }
+      .step-line {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex-shrink: 0;
+        width: 20px;
+      }
+      .step-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        border: 2px solid var(--border);
+        background: var(--bg);
+        flex-shrink: 0;
+        margin-top: 6px;
+        z-index: 1;
+      }
+      .step-connector {
+        width: 1.5px;
+        flex: 1;
+        background: var(--border);
+        min-height: 12px;
+      }
+      .step-item:last-child .step-connector {
+        display: none;
+      }
+      .step-content {
+        font-size: 13px;
+        color: var(--fg3);
+        line-height: 1.6;
+        padding-bottom: 16px;
+      }
+      .step-item:last-child .step-content {
+        padding-bottom: 0;
+      }
+      .step-content b {
+        color: var(--fg2);
+        font-weight: 500;
+      }
+
+      [dir="rtl"] .step-item {
+        flex-direction: row-reverse;
+      }
+      [dir="rtl"] .card-header {
+        flex-direction: row-reverse;
+      }
+
+      /* Buttons */
+      .btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        text-decoration: none;
+        border: none;
+        outline: none;
+      }
+      .btn:focus-visible {
+        box-shadow:
+          0 0 0 2px var(--bg),
+          0 0 0 4px var(--ring);
+      }
+      .btn:active {
+        transform: scale(0.98);
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: var(--primary-fg);
+        font-weight: 600;
+      }
+      .btn-primary:hover {
+        background: #00ffaa;
+      }
+      .btn-outline {
+        background: transparent;
+        color: var(--fg);
+        border: 1px solid var(--border);
+      }
+      .btn-outline:hover {
+        background: var(--muted);
+        border-color: var(--fg3);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--fg3);
+        border: 1px solid transparent;
+      }
+      .btn-ghost:hover {
+        background: var(--muted);
+        color: var(--fg2);
+      }
+      .btn + .btn {
+        margin-top: 8px;
+      }
+
+      /* URL display */
+      .url-display {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px;
+        text-align: center;
+        font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+        font-size: 14px;
+        color: var(--accent);
+        font-weight: 500;
+        word-break: break-all;
+        cursor: pointer;
+        transition: all 0.15s;
+        margin-bottom: 10px;
+        user-select: all;
+        direction: ltr;
+      }
+      .url-display:hover {
+        border-color: var(--accent);
+        background: rgba(0, 230, 138, 0.04);
+      }
+
+      /* Result toast */
+      .result {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+        margin-top: 10px;
+      }
+      .result.ok {
+        background: var(--success-bg);
+        color: var(--success);
+        border: 1px solid rgba(0, 230, 138, 0.12);
+      }
+      .result.fail {
+        background: var(--destructive-bg);
+        color: var(--destructive);
+        border: 1px solid rgba(240, 64, 80, 0.12);
+      }
+      .result.testing {
+        background: rgba(77, 166, 255, 0.06);
+        color: var(--blue);
+        border: 1px solid rgba(77, 166, 255, 0.1);
+      }
+
+      /* Back link */
+      .back-link {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--fg3);
+        text-decoration: none;
+        font-size: 13px;
+        font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+        margin-bottom: 8px;
+        transition: color 0.15s;
+      }
+      .back-link:hover { color: var(--accent); }
+
+      /* Responsive */
+      @media (max-width: 400px) {
+        .container {
+          padding: 12px 12px 40px;
+        }
+        h1 {
+          font-size: 18px;
+        }
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="container">
+      <a href="/" class="back-link">&#8592; <span id="t_back">Dashboard</span></a>
+
+      <div class="header">
+        <div class="logo">Pi</div>
+        <h1 id="t_title">Print Server Setup</h1>
+        <p class="subtitle" id="t_sub">
+          Connect your device to the local print server
+        </p>
+      </div>
+
+      <div class="lang-toggle">
+        <button class="active" onclick="setLang('en')">English</button>
+        <button onclick="setLang('ar')">&#x0627;&#x0644;&#x0639;&#x0631;&#x0628;&#x064A;&#x0629;</button>
+      </div>
+
+      <div id="statusBox" class="status-badge load">
+        <span class="dot"></span><span id="statusText">...</span>
+      </div>
+      <div id="infoRow" class="info-chips"></div>
+
+      <!-- Step 1 -->
+      <div class="card">
+        <div class="card-header">
+          <div class="step-num">1</div>
+          <div class="card-label" id="t_s1_title">Install Certificate</div>
+        </div>
+        <p class="card-desc" id="t_s1_desc">
+          Your device needs to trust this server for secure HTTPS connections.
+        </p>
+        <a
+          id="certBtn"
+          class="btn btn-primary"
+          href="/api/certificate"
+          download="printserver.cer"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span id="t_s1_btn">Download Certificate</span>
+        </a>
+      </div>
+
+      <!-- Step 2 — iOS -->
+      <div class="card" id="iosSteps" style="display: none">
+        <div class="card-header">
+          <div class="step-num">2</div>
+          <div class="card-label" id="t_s2_ios_title">
+            Enable Trust — iOS / iPadOS
+          </div>
+        </div>
+        <div class="steps" id="t_s2_ios_steps"></div>
+      </div>
+
+      <!-- Step 2 — Android -->
+      <div class="card" id="androidSteps" style="display: none">
+        <div class="card-header">
+          <div class="step-num">2</div>
+          <div class="card-label" id="t_s2_and_title">
+            Enable Trust — Android
+          </div>
+        </div>
+        <div class="steps" id="t_s2_and_steps"></div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="card">
+        <div class="card-header">
+          <div class="step-num">3</div>
+          <div class="card-label" id="t_s3_title">Test Connection</div>
+        </div>
+        <p class="card-desc" id="t_s3_desc">
+          After installing the certificate, verify HTTPS works.
+        </p>
+        <button class="btn btn-outline" onclick="testHttps()">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+          <span id="t_s3_btn">Test HTTPS</span>
+        </button>
+        <div id="httpsResult"></div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="card">
+        <div class="card-header">
+          <div class="step-num">4</div>
+          <div class="card-label" id="t_s4_title">Configure POS App</div>
+        </div>
+        <p class="card-desc" id="t_s4_desc">
+          Set this URL as the printer server address in your POS app settings:
+        </p>
+        <div id="printerUrl" class="url-display" onclick="copyUrl()">...</div>
+        <button class="btn btn-ghost" onclick="copyUrl()">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+          <span id="t_s4_btn">Copy URL</span>
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const i18n = {
+        en: {
+          back: "Dashboard",
+          title: "Print Server Setup",
+          sub: "Connect your device to the local print server",
+          status_ok: "Server is running",
+          status_err: "Cannot reach server",
+          status_load: "Checking...",
+          s1_title: "Install Certificate",
+          s1_desc:
+            "Your device needs to trust this server for secure HTTPS connections.",
+          s1_btn: "Download Certificate",
+          s2_ios_title: "Enable Trust \u2014 iOS / iPadOS",
+          s2_ios_steps: [
+            "Open <b>Settings</b> \u2192 <b>General</b> \u2192 <b>VPN & Device Management</b>",
+            'Tap the <b>printer server</b> profile \u2192 <b>Install</b>',
+            "Go to <b>Settings</b> \u2192 <b>General</b> \u2192 <b>About</b> \u2192 <b>Certificate Trust Settings</b>",
+            "Toggle <b>ON</b> for the printer server certificate",
+          ],
+          s2_and_title: "Enable Trust \u2014 Android",
+          s2_and_steps: [
+            "Tap <b>Download Certificate</b> above \u2014 the file saves to your Downloads folder",
+            "Open <b>Settings</b> \u2192 <b>Security</b> \u2192 <b>More security settings</b> \u2192 <b>Encryption & credentials</b>",
+            "Tap <b>Install a certificate</b> \u2192 <b>CA certificate</b> \u2192 <b>Install anyway</b>",
+            "Browse to <b>Downloads</b> and select <b>printserver.cer</b>",
+            'You should see <b>"CA certificate installed"</b> confirmation',
+          ],
+          s3_title: "Test Connection",
+          s3_desc: "After installing the certificate, verify HTTPS works.",
+          s3_btn: "Test HTTPS",
+          s3_ok: "Connected! HTTPS is working.",
+          s3_fail:
+            "Failed \u2014 make sure the certificate is installed and trusted.",
+          s4_title: "Configure POS App",
+          s4_desc:
+            "Set this URL as the printer server address in your POS app settings:",
+          s4_btn: "Copy URL",
+          copied: "Copied!",
+        },
+        ar: {
+          back: "\u0644\u0648\u062D\u0629 \u0627\u0644\u062A\u062D\u0643\u0645",
+          title: "\u0625\u0639\u062F\u0627\u062F \u062E\u0627\u062F\u0645 \u0627\u0644\u0637\u0628\u0627\u0639\u0629",
+          sub: "\u0642\u0645 \u0628\u062A\u0648\u0635\u064A\u0644 \u062C\u0647\u0627\u0632\u0643 \u0628\u062E\u0627\u062F\u0645 \u0627\u0644\u0637\u0628\u0627\u0639\u0629 \u0627\u0644\u0645\u062D\u0644\u064A",
+          status_ok: "\u0627\u0644\u062E\u0627\u062F\u0645 \u064A\u0639\u0645\u0644",
+          status_err: "\u0644\u0627 \u064A\u0645\u0643\u0646 \u0627\u0644\u0648\u0635\u0648\u0644 \u0625\u0644\u0649 \u0627\u0644\u062E\u0627\u062F\u0645",
+          status_load: "\u062C\u0627\u0631\u064A \u0627\u0644\u0641\u062D\u0635...",
+          s1_title: "\u062A\u062B\u0628\u064A\u062A \u0627\u0644\u0634\u0647\u0627\u062F\u0629",
+          s1_desc: "\u064A\u062D\u062A\u0627\u062C \u062C\u0647\u0627\u0632\u0643 \u0625\u0644\u0649 \u0627\u0644\u0648\u062B\u0648\u0642 \u0628\u0647\u0630\u0627 \u0627\u0644\u062E\u0627\u062F\u0645 \u0644\u0627\u062A\u0635\u0627\u0644\u0627\u062A HTTPS \u0627\u0644\u0622\u0645\u0646\u0629.",
+          s1_btn: "\u062A\u062D\u0645\u064A\u0644 \u0627\u0644\u0634\u0647\u0627\u062F\u0629",
+          s2_ios_title: "\u062A\u0641\u0639\u064A\u0644 \u0627\u0644\u062B\u0642\u0629 \u2014 iOS / iPadOS",
+          s2_ios_steps: [
+            "\u0627\u0641\u062A\u062D <b>\u0627\u0644\u0625\u0639\u062F\u0627\u062F\u0627\u062A</b> \u2190 <b>\u0639\u0627\u0645</b> \u2190 <b>VPN \u0648\u0625\u062F\u0627\u0631\u0629 \u0627\u0644\u0623\u062C\u0647\u0632\u0629</b>",
+            '\u0627\u0636\u063A\u0637 \u0639\u0644\u0649 \u0645\u0644\u0641 \u062E\u0627\u062F\u0645 \u0627\u0644\u0637\u0628\u0627\u0639\u0629 \u2190 \u0627\u0636\u063A\u0637 <b>\u062A\u062B\u0628\u064A\u062A</b>',
+            "\u0627\u0630\u0647\u0628 \u0625\u0644\u0649 <b>\u0627\u0644\u0625\u0639\u062F\u0627\u062F\u0627\u062A</b> \u2190 <b>\u0639\u0627\u0645</b> \u2190 <b>\u062D\u0648\u0644</b> \u2190 <b>\u0625\u0639\u062F\u0627\u062F\u0627\u062A \u0627\u0644\u0634\u0647\u0627\u062F\u0627\u062A \u0627\u0644\u0645\u0648\u062B\u0648\u0642\u0629</b>",
+            "\u0641\u0639\u0651\u0644 \u0634\u0647\u0627\u062F\u0629 \u062E\u0627\u062F\u0645 \u0627\u0644\u0637\u0628\u0627\u0639\u0629",
+          ],
+          s2_and_title: "\u062A\u0641\u0639\u064A\u0644 \u0627\u0644\u062B\u0642\u0629 \u2014 Android",
+          s2_and_steps: [
+            "\u0627\u0636\u063A\u0637 <b>\u062A\u062D\u0645\u064A\u0644 \u0627\u0644\u0634\u0647\u0627\u062F\u0629</b> \u0623\u0639\u0644\u0627\u0647 \u2014 \u0633\u064A\u062A\u0645 \u062D\u0641\u0638 \u0627\u0644\u0645\u0644\u0641 \u0641\u064A \u0645\u062C\u0644\u062F \u0627\u0644\u062A\u0646\u0632\u064A\u0644\u0627\u062A",
+            "\u0627\u0641\u062A\u062D <b>\u0627\u0644\u0625\u0639\u062F\u0627\u062F\u0627\u062A</b> \u2190 <b>\u0627\u0644\u0623\u0645\u0627\u0646</b> \u2190 <b>\u0625\u0639\u062F\u0627\u062F\u0627\u062A \u0623\u0645\u0627\u0646 \u0625\u0636\u0627\u0641\u064A\u0629</b> \u2190 <b>\u0627\u0644\u062A\u0634\u0641\u064A\u0631 \u0648\u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0627\u0639\u062A\u0645\u0627\u062F</b>",
+            "\u0627\u0636\u063A\u0637 <b>\u062A\u062B\u0628\u064A\u062A \u0634\u0647\u0627\u062F\u0629</b> \u2190 <b>\u0634\u0647\u0627\u062F\u0629 CA</b> \u2190 <b>\u062A\u062B\u0628\u064A\u062A \u0639\u0644\u0649 \u0623\u064A \u062D\u0627\u0644</b>",
+            "\u0627\u0633\u062A\u0639\u0631\u0636 \u0645\u062C\u0644\u062F <b>\u0627\u0644\u062A\u0646\u0632\u064A\u0644\u0627\u062A</b> \u0648\u0627\u062E\u062A\u0631 \u0645\u0644\u0641 <b>printserver.cer</b>",
+            '\u064A\u062C\u0628 \u0623\u0646 \u062A\u0631\u0649 \u062A\u0623\u0643\u064A\u062F <b>"\u062A\u0645 \u062A\u062B\u0628\u064A\u062A \u0634\u0647\u0627\u062F\u0629 CA"</b>',
+          ],
+          s3_title: "\u0627\u062E\u062A\u0628\u0627\u0631 \u0627\u0644\u0627\u062A\u0635\u0627\u0644",
+          s3_desc: "\u0628\u0639\u062F \u062A\u062B\u0628\u064A\u062A \u0627\u0644\u0634\u0647\u0627\u062F\u0629\u060C \u062A\u062D\u0642\u0642 \u0645\u0646 \u0639\u0645\u0644 HTTPS.",
+          s3_btn: "\u0627\u062E\u062A\u0628\u0627\u0631 HTTPS",
+          s3_ok: "\u062A\u0645 \u0627\u0644\u0627\u062A\u0635\u0627\u0644! HTTPS \u064A\u0639\u0645\u0644 \u0628\u0646\u062C\u0627\u062D.",
+          s3_fail: "\u0641\u0634\u0644 \u2014 \u062A\u0623\u0643\u062F \u0645\u0646 \u062A\u062B\u0628\u064A\u062A \u0627\u0644\u0634\u0647\u0627\u062F\u0629 \u0648\u062A\u0641\u0639\u064A\u0644 \u0627\u0644\u062B\u0642\u0629.",
+          s4_title: "\u0625\u0639\u062F\u0627\u062F \u062A\u0637\u0628\u064A\u0642 \u0646\u0642\u0637\u0629 \u0627\u0644\u0628\u064A\u0639",
+          s4_desc: "\u0623\u062F\u062E\u0644 \u0647\u0630\u0627 \u0627\u0644\u0639\u0646\u0648\u0627\u0646 \u0643\u062E\u0627\u062F\u0645 \u0627\u0644\u0637\u0628\u0627\u0639\u0629 \u0641\u064A \u0625\u0639\u062F\u0627\u062F\u0627\u062A \u0627\u0644\u062A\u0637\u0628\u064A\u0642:",
+          s4_btn: "\u0646\u0633\u062E \u0627\u0644\u0639\u0646\u0648\u0627\u0646",
+          copied: "\u062A\u0645 \u0627\u0644\u0646\u0633\u062E!",
+        },
+      };
+
+      let lang = "en";
+      let serverData = null;
+
+      function setLang(l) {
+        lang = l;
+        document.documentElement.lang = l;
+        document.documentElement.dir = l === "ar" ? "rtl" : "ltr";
+        document
+          .querySelectorAll(".lang-toggle button")
+          .forEach((b) => b.classList.remove("active"));
+        document
+          .querySelectorAll(".lang-toggle button")
+          [l === "ar" ? 1 : 0].classList.add("active");
+        render();
+      }
+
+      function t(key) {
+        return i18n[lang][key] || key;
+      }
+
+      function renderSteps(containerId, stepsArr) {
+        const el = document.getElementById(containerId);
+        el.innerHTML = stepsArr
+          .map(
+            (text, i) =>
+              `<div class="step-item">
+       <div class="step-line"><div class="step-dot"></div>${i < stepsArr.length - 1 ? '<div class="step-connector"></div>' : ""}</div>
+       <div class="step-content">${text}</div>
+     </div>`,
+          )
+          .join("");
+      }
+
+      function render() {
+        const $ = (id) => document.getElementById(id);
+        $("t_back").textContent = t("back");
+        $("t_title").textContent = t("title");
+        $("t_sub").textContent = t("sub");
+        $("t_s1_title").textContent = t("s1_title");
+        $("t_s1_desc").textContent = t("s1_desc");
+        $("t_s1_btn").textContent = t("s1_btn");
+        $("t_s2_ios_title").textContent = t("s2_ios_title");
+        $("t_s2_and_title").textContent = t("s2_and_title");
+        $("t_s3_title").textContent = t("s3_title");
+        $("t_s3_desc").textContent = t("s3_desc");
+        $("t_s3_btn").textContent = t("s3_btn");
+        $("t_s4_title").textContent = t("s4_title");
+        $("t_s4_desc").textContent = t("s4_desc");
+        $("t_s4_btn").textContent = t("s4_btn");
+        $("statusText").textContent = serverData
+          ? t("status_ok")
+          : t("status_load");
+        renderSteps("t_s2_ios_steps", t("s2_ios_steps"));
+        renderSteps("t_s2_and_steps", t("s2_and_steps"));
+      }
+
+      function detectDevice() {
+        const ua = navigator.userAgent;
+        const isIos =
+          /iPad|iPhone|iPod/.test(ua) ||
+          (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+        const isAndroid = /Android/.test(ua);
+        document.getElementById("iosSteps").style.display =
+          isIos || (!isIos && !isAndroid) ? "" : "none";
+        document.getElementById("androidSteps").style.display =
+          isAndroid || (!isIos && !isAndroid) ? "" : "none";
+      }
+
+      async function loadInfo() {
+        document.getElementById("statusText").textContent = t("status_load");
+        try {
+          const res = await fetch(location.origin + "/api/discover");
+          serverData = await res.json();
+          const ip = serverData.ips?.[0] || location.hostname;
+          const httpsUrl = serverData.httpsEnabled
+            ? `https://${ip}:${serverData.httpsPort}`
+            : `http://${ip}:${serverData.httpPort}`;
+
+          const box = document.getElementById("statusBox");
+          box.className = "status-badge ok";
+          document.getElementById("statusText").textContent = t("status_ok");
+
+          document.getElementById("infoRow").innerHTML =
+            `<span class="chip"><b>${serverData.hostname}</b></span>` +
+            `<span class="chip"><b>IP</b>&nbsp; ${serverData.ips.join(", ")}</span>` +
+            `<span class="chip"><b>HTTP</b>&nbsp; :${serverData.httpPort}</span>` +
+            (serverData.httpsEnabled
+              ? `<span class="chip"><b>HTTPS</b>&nbsp; :${serverData.httpsPort}</span>`
+              : "");
+
+          document.getElementById("printerUrl").textContent = httpsUrl;
+          document.getElementById("printerUrl").dataset.url = httpsUrl;
+        } catch {
+          document.getElementById("statusBox").className = "status-badge err";
+          document.getElementById("statusText").textContent = t("status_err");
+        }
+      }
+
+      async function testHttps() {
+        const box = document.getElementById("httpsResult");
+        if (!serverData?.httpsEnabled) {
+          box.innerHTML = '<div class="result fail">HTTPS is not enabled on this server.</div>';
+          return;
+        }
+        const ip = serverData.ips?.[0] || location.hostname;
+        const url = `https://${ip}:${serverData.httpsPort}/api/discover`;
+        box.innerHTML = '<div class="result testing">Testing...</div>';
+        try {
+          const res = await fetch(url, { mode: "cors", cache: "no-cache" });
+          const data = await res.json();
+          if (data.service === "RaspberryPiPrintServer") {
+            box.innerHTML = `<div class="result ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>${t("s3_ok")}</div>`;
+          } else {
+            throw new Error("Unexpected service");
+          }
+        } catch {
+          box.innerHTML = `<div class="result fail"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>${t("s3_fail")}</div>`;
+        }
+      }
+
+      function copyUrl() {
+        const url = document.getElementById("printerUrl").dataset.url;
+        if (!url) return;
+        navigator.clipboard.writeText(url).catch(() => {});
+        const el = document.getElementById("printerUrl");
+        const orig = el.textContent;
+        el.textContent = t("copied");
+        el.style.color = "var(--success)";
+        setTimeout(() => {
+          el.textContent = orig;
+          el.style.color = "";
+        }, 1200);
+      }
+
+      detectDevice();
+      render();
+      loadInfo();
+    </script>
+  </body>
+</html>
